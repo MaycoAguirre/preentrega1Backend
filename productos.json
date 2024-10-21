@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "title": "Camiseta de fútbol",
+    "description": "Camiseta de equipo local",
+    "code": "CF1234",
+    "price": 59.99,
+    "stock": 10,
+    "category": "Ropa",
+    "thumbnails": [
+      "img1.jpg",
+      "img2.jpg"
+    ],
+    "status": true
+  }
+]
