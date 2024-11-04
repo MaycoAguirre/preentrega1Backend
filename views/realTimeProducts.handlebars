@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Productos en Tiempo Real</title>
+</head>
+<body>
+  <h1>Productos en Tiempo Real</h1>
+  <ul id="productos-lista">
+    {{#each productos}}
+      <li>{{this.title}} - ${{this.price}}</li>
+    {{/each}}
+  </ul>
+
+  <!-- Formulario para agregar productos -->
+  <form id="form-producto">
+    <input type="text" name="title" placeholder="Nombre del producto" required />
+    <input type="number" name="price" placeholder="Precio" required />
+    <button type="submit">Agregar Producto</button>
+  </form>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    // Actualiza la lista de productos en tiempo real
+    socket.on('updateProducts', (productos) => {
+      const productosLista = document.getElementById('productos-lista');
+      productosLista.innerHTML = '';
+      productos.forEach(prod => {
+        const li = document.createElement('li');
+        li.textContent = `${prod.title} - $${prod.price}`;
+        productosLista.appendChild(li);
+      });
+    });
+
+    // Enviar nuevo producto al servidor
+    document.getElementById('form-producto').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const nuevoProducto = {};
+      formData.forEach((value, key) => (nuevoProducto[key] = value));
+
+      fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nuevoProducto)
+      }).then(() => this.reset());
+    });
+  </script>
+</body>
+</html>
