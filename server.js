@@ -1,53 +1,57 @@
 const express = require('express');
-const { Server } = require('socket.io');
-const handlebars = require('express-handlebars');
-const path = require('path');
+const { engine } = require('express-handlebars'); // Importar el motor de plantillas
+const socketIo = require('socket.io');
+const http = require('http');
 
 const app = express();
-const httpServer = app.listen(8080, () => console.log('Servidor escuchando en puerto 8080'));
-const io = new Server(httpServer);
+const server = http.createServer(app);
+const io = socketIo(server);
 
-// Configurar Handlebars
-app.engine('handlebars', handlebars.engine());
+// Configuración de Handlebars
+app.engine('handlebars', engine({
+    layoutsDir: __dirname + '/views/layouts',
+    defaultLayout: 'main'
+}));
 app.set('view engine', 'handlebars');
-app.set('views', path.join(__dirname, 'views'));
 
-// Middlewares
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+// Datos de ejemplo para productos
+let productos = [
+    { id: 1, title: "Producto 1", price: 100 },
+    { id: 2, title: "Producto 2", price: 200 },
+    // Otros productos...
+];
 
-// Array de productos
-let productos = [];
-
-// Ruta para la vista estática de productos
+// Ruta raíz
 app.get('/', (req, res) => {
-  res.render('home', { productos });
+    res.render('index', { title: 'Lista de Productos', products: productos });
 });
 
-// Ruta para la vista en tiempo real de productos
+// Ruta para productos en tiempo real
 app.get('/realtimeproducts', (req, res) => {
-  res.render('realTimeProducts', { productos });
+    res.render('realTimeProducts', { title: 'Productos en Tiempo Real', products: productos });
 });
 
-// Ruta POST para agregar productos
-app.post('/api/products', (req, res) => {
-  const nuevoProducto = { id: Date.now(), ...req.body };
-  productos.push(nuevoProducto);
-  io.emit('updateProducts', productos);  // Actualiza la lista en tiempo real
-  res.redirect('/realtimeproducts');     // Redirige a la vista de productos en tiempo real
-});
-
-// Ruta DELETE para eliminar un producto por ID
-app.delete('/api/products/:id', (req, res) => {
-  const { id } = req.params;
-  productos = productos.filter(prod => prod.id !== parseInt(id));
-  io.emit('updateProducts', productos);  // Actualiza la lista en tiempo real
-  res.sendStatus(200);
-});
-
-// Configuración de Socket.io
+// Configuración de WebSocket
 io.on('connection', (socket) => {
-  console.log('Nuevo cliente conectado');
-  socket.emit('updateProducts', productos);  // Envía la lista de productos al cliente al conectarse
+    console.log('Cliente conectado');
+
+    // Emitir la lista de productos a los clientes conectados
+    socket.emit('productUpdate', productos);
+
+    // Lógica para agregar o eliminar productos (ejemplo básico)
+    socket.on('addProduct', (product) => {
+        productos.push(product);
+        io.emit('productUpdate', productos); // Emitir la actualización a todos los clientes
+    });
+
+    socket.on('removeProduct', (id) => {
+        productos = productos.filter(product => product.id !== id);
+        io.emit('productUpdate', productos); // Emitir la actualización a todos los clientes
+    });
+});
+
+// Levanta el servidor
+const PORT = 8080;
+server.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

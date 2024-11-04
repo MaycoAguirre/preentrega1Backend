@@ -1,52 +1,47 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Productos en Tiempo Real</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('productUpdate', (products) => {
+            const productList = document.getElementById('productList');
+            productList.innerHTML = ''; // Limpiar la lista antes de actualizar
+
+            products.forEach(product => {
+                const li = document.createElement('li');
+                li.textContent = `${product.title} - $${product.price}`;
+                productList.appendChild(li);
+            });
+        });
+
+        function addProduct() {
+            const newProduct = {
+                id: Math.floor(Math.random() * 1000), // Asignar un ID aleatorio
+                title: document.getElementById('productTitle').value,
+                price: document.getElementById('productPrice').value
+            };
+            socket.emit('addProduct', newProduct);
+        }
+    </script>
 </head>
 <body>
-  <h1>Productos en Tiempo Real</h1>
-  <ul id="productos-lista">
-    {{#each productos}}
-      <li>{{this.title}} - ${{this.price}}</li>
-    {{/each}}
-  </ul>
-
-  <!-- Formulario para agregar productos -->
-  <form id="form-producto">
-    <input type="text" name="title" placeholder="Nombre del producto" required />
-    <input type="number" name="price" placeholder="Precio" required />
-    <button type="submit">Agregar Producto</button>
-  </form>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-
-    // Actualiza la lista de productos en tiempo real
-    socket.on('updateProducts', (productos) => {
-      const productosLista = document.getElementById('productos-lista');
-      productosLista.innerHTML = '';
-      productos.forEach(prod => {
-        const li = document.createElement('li');
-        li.textContent = `${prod.title} - $${prod.price}`;
-        productosLista.appendChild(li);
-      });
-    });
-
-    // Enviar nuevo producto al servidor
-    document.getElementById('form-producto').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const formData = new FormData(this);
-      const nuevoProducto = {};
-      formData.forEach((value, key) => (nuevoProducto[key] = value));
-
-      fetch('/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(nuevoProducto)
-      }).then(() => this.reset());
-    });
-  </script>
+    <h1>{{title}}</h1>
+    <ul id="productList">
+        {{#each products}}
+            <li>
+                {{title}} - ${{price}}
+            </li>
+        {{else}}
+            <li>No hay productos disponibles.</li>
+        {{/each}}
+    </ul>
+    <input type="text" id="productTitle" placeholder="Título del producto">
+    <input type="number" id="productPrice" placeholder="Precio del producto">
+    <button onclick="addProduct()">Agregar Producto</button>
 </body>
 </html>
